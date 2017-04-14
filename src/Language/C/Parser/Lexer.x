@@ -52,6 +52,7 @@ module Language.C.Parser.Lexer (lexC, parseError) where
 
 import Data.Char (chr, isDigit)
 import Data.Word (Word8)
+import Control.DeepSeq
 import Control.Monad (liftM, when)
 
 import Language.C.Data.InputStream
@@ -142,7 +143,9 @@ $white+         ;
 --   doesn't say how many ints there can be, we allow an unbound number
 --
 \#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
-  { \pos len str -> setPos (adjustLineDirective len (takeChars len str) pos) >> lexToken' False }
+  { \pos len str ->
+    let s = takeChars len str in s `deepseq`
+    setPos (adjustLineDirective len s pos) >> lexToken' False }
 
 -- #pragma directive (K&R A12.8)
 --
@@ -160,7 +163,8 @@ $white+         ;
 
 -- identifiers and keywords (follows K&R A2.3 and A2.4)
 --
-$identletter($identletter|$digit)*  { \pos len str -> idkwtok (takeChars len str) pos }
+$identletter($identletter|$digit)*
+  { \pos len str -> let s = takeChars len str in s `deepseq` idkwtok s pos }
 
 -- constants (follows K&R A2.5)
 --
@@ -442,15 +446,19 @@ token_fail errmsg pos _ _ =   failP pos [ "Lexical Error !", errmsg ]
 -- token that uses the string
 token :: (PosLength -> a -> CToken) -> (String -> a)
       -> Position -> Int -> InputStream -> P CToken
-token mkTok fromStr pos len str = return (mkTok (pos,len) (fromStr $ takeChars len str))
+token mkTok fromStr pos len str =
+  let s = takeChars len str in s `deepseq`
+  return (mkTok (pos,len) (fromStr s))
 
 {-# INLINE token_plus #-}
 -- token that may fail
 token_plus :: (PosLength -> a -> CToken) -> (String -> Either String a)
       -> Position -> Int -> InputStream -> P CToken
 token_plus mkTok fromStr pos len str =
-  case fromStr (takeChars len str) of Left err -> failP pos [ "Lexical error ! ", err ]
-                                      Right ok -> return $! mkTok (pos,len) ok
+  let s = takeChars len str in s `deepseq`
+  case fromStr s of
+    Left err -> failP pos [ "Lexical error ! ", err ]
+    Right ok -> return $! mkTok (pos,len) ok
 
 -- -----------------------------------------------------------------------------
 -- The input type

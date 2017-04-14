@@ -72,7 +72,7 @@ takeByte bs = BSW.head  bs `seq`  (BSW.head bs, BSW.tail bs)
 takeChar bs = BSC.head bs `seq`  (BSC.head bs, BSC.tail bs)
 inputStreamEmpty = BSW.null
 #ifndef __HADDOCK__
-takeChars !n bstr = BSC.unpack $ BSC.take n bstr --leaks
+takeChars !n bstr = BSC.unpack $ BSC.take n bstr
 #endif
 readInputStream       = BSW.readFile
 
