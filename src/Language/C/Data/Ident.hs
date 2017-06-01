@@ -29,6 +29,7 @@ import Language.C.Data.Position
 import Language.C.Data.Node
 import Language.C.Data.Name (Name)
 import Data.Generics
+import Control.DeepSeq
 
 -- | References uniquely determining a struct, union or enum type.
 -- Those are either identified by an string identifier, or by a unique
@@ -102,7 +103,7 @@ bits28 = 2^(28::Int)
 --
 -- * for reasons of simplicity the complete lexeme is hashed.
 mkIdent            :: Position -> String -> Name -> Ident
-mkIdent pos s name  = Ident s (quad s) (mkNodeInfo' pos (pos,length s) name)
+mkIdent pos s name  = s `deepseq` Ident s (quad s) (mkNodeInfo' pos (pos,length s) name)
 
 -- | returns an /internal/ identifier (has internal position and no unique name)
 internalIdent   :: String -> Ident
